@@ -11,6 +11,8 @@ import torch
 
 from typeguard import check_argument_types
 
+from espnet.nets.pytorch_backend.nets_utils import make_non_pad_mask
+from espnet.nets.pytorch_backend.transformer.mask import subsequent_mask
 from espnet2.asr.encoder.abs_encoder import AbsEncoder
 from espnet2.asr.frontend.abs_frontend import AbsFrontend
 from espnet2.audio_to_lip.decoder.abs_decoder import AbsDecoder
@@ -48,23 +50,33 @@ class ESPnetAudioToLipModel(AbsESPnetModel):
         self, 
         speech: torch.Tensor,
         speech_lengths: torch.Tensor,
-        lip_landmarks: torch.Tensor,
-        lip_landmarks_lengths: torch.Tensor,
+        lips: torch.Tensor,
+        lips_lengths: torch.Tensor,
     ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor], torch.Tensor]:
         encoder_out, encoder_out_lens = self.encode(speech, speech_lengths)
-        pred = self.decoder(encoder_out, encoder_out_lens, lip_landmarks, lip_landmarks_lengths)
-        loss = self.criterion(lip_landmarks, pred)
+        encoder_mask = self._source_mask(encoder_out_lens)
+        pred = self.decoder(encoder_out, encoder_mask, lips, lips_lengths)
+        loss = self.criterion(lips, pred)
         stats = {"loss": loss.item()}
         batch_size = speech.size(0)
         loss, stats, weight = force_gatherable((loss, stats, batch_size), loss.device)
         return loss, stats, weight
 
+    def inference(
+        self,
+        speech: torch.Tensor,
+        speech_lengths: torch.Tensor,
+    ):
+        assert len(speech) == 1 # batch of one?
+        encoder_out, _ = self.encode(speech, speech_lengths)
+        return self.decoder.inference(encoder_out, speech_lengths)
+
     def collect_feats(
         self,
         speech: torch.Tensor,
         speech_lengths: torch.Tensor,
-        lip_landmarks: torch.Tensor,
-        lip_landmarks_lengths: torch.Tensor,
+        lips: torch.Tensor,
+        lips_lengths: torch.Tensor,
     ) -> Dict[str, torch.Tensor]:
         feats, feats_lengths = self._extract_feats(speech, speech_lengths)
         return {"feats": feats, "feats_lengths": feats_lengths}
@@ -116,3 +128,24 @@ class ESPnetAudioToLipModel(AbsESPnetModel):
         # speech (Batch, NSamples) -> feats: (Batch, NFrames, Dim)
         feats, feats_lengths = self.frontend(speech, speech_lengths)
         return feats, feats_lengths
+
+    def _source_mask(self, ilens):
+        """Make masks for self-attention.
+
+        Args:
+            ilens (LongTensor): Batch of lengths (B,).
+
+        Returns:
+            Tensor: Mask tensor for self-attention.
+                    dtype=torch.uint8 in PyTorch 1.2-
+                    dtype=torch.bool in PyTorch 1.2+ (including 1.2)
+
+        Examples:
+            >>> ilens = [5, 3]
+            >>> self._source_mask(ilens)
+            tensor([[[1, 1, 1, 1, 1],
+                    [[1, 1, 1, 0, 0]]], dtype=torch.uint8)
+
+        """
+        x_masks = make_non_pad_mask(ilens).to(next(self.parameters()).device)
+        return x_masks.unsqueeze(-2)

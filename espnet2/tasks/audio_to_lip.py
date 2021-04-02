@@ -68,6 +68,9 @@ decoder_choices = ClassChoices(
 )
 
 
+OUTPUT_DIM = 8
+
+
 class AudioToLip(AbsTask):
     # Add variable objects configurations
     class_choices_list = [
@@ -113,7 +116,7 @@ class AudioToLip(AbsTask):
         cls, train: bool = True, inference: bool = False
     ) -> Tuple[str, ...]:
         if not inference:
-            retval = ("speech", "lip_landmarks")
+            retval = ("speech", "lips")
         else:
             # Recognition mode
             retval = ("speech",)
@@ -148,6 +151,7 @@ class AudioToLip(AbsTask):
         # 4. Decoder
         decoder_class = decoder_choices.get_class(args.decoder)
         decoder = decoder_class(
+            OUTPUT_DIM,
             encoder.output_size(),
             **args.decoder_conf,
         )

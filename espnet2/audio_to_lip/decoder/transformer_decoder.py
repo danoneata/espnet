@@ -11,8 +11,7 @@ from espnet2.audio_to_lip.decoder.abs_decoder import AbsDecoder
 
 class TransformerDecoder(AbsDecoder):
     def __init__(self,
-        # encoder_output_size: int,
-        # adim: int = 512,
+        output_dim: int,
         adim: int = 256,
         aheads: int = 4,
         dlayers: int = 6,
@@ -31,14 +30,13 @@ class TransformerDecoder(AbsDecoder):
         pos_enc_class = (
             ScaledPositionalEncoding if use_scaled_pos_enc else PositionalEncoding
         )
-        odim = 20
-        self.odim = 20
+        self.output_dim = output_dim
         # define transformer decoder
         if dprenet_layers != 0:
             # decoder prenet
             decoder_input_layer = torch.nn.Sequential(
                 DecoderPrenet(
-                    idim=odim,
+                    idim=self.output_dim,
                     n_layers=dprenet_layers,
                     n_units=dprenet_units,
                     dropout_rate=dprenet_dropout_rate,
@@ -49,7 +47,7 @@ class TransformerDecoder(AbsDecoder):
             decoder_input_layer = "linear"
         super().__init__()
         self.decoder = Decoder(
-            odim=odim,  # odim is needed when no prenet is used
+            odim=self.output_dim,  # odim is needed when no prenet is used
             attention_dim=adim,
             attention_heads=aheads,
             linear_units=dunits,
@@ -64,14 +62,40 @@ class TransformerDecoder(AbsDecoder):
             normalize_before=decoder_normalize_before,
             concat_after=decoder_concat_after,
         )
-        self.feat_out = torch.nn.Linear(adim, odim)
+        self.feat_out = torch.nn.Linear(adim, self.output_dim)
 
     def forward(self, hs, h_masks, ys, olens):
         ys_in = self._add_first_frame_and_remove_last_frame(ys)
         y_masks = self._target_mask(olens)
         zs, _ = self.decoder(ys_in, y_masks, hs, h_masks)
-        before_outs = self.feat_out(zs).view(zs.size(0), -1, self.odim)
+        before_outs = self.feat_out(zs).view(zs.size(0), -1, self.output_dim)
         return before_outs
+
+    def inference(self, hs, speech_lengths):
+        assert hs.shape[0] == 1 and speech_lengths.shape[0] == 1
+
+        num_out = speech_lengths[0] / 16_000 * 29.97
+        num_out = int(num_out.round().cpu().item())
+
+        # initialize
+        ys = hs.new_zeros(1, 1, self.output_dim).to(hs.device)
+        outs = torch.zeros(num_out, self.output_dim).to(hs.device)
+
+        z_cache = self.decoder.init_state(hs)
+        for idx in range(1, num_out + 1):
+            # calculate output and stop prob at idx-th step
+            y_masks = subsequent_mask(idx).unsqueeze(0).to(hs.device)
+            z, z_cache = self.decoder.forward_one_step(
+                ys, y_masks, hs, cache=z_cache
+            )  # (B, adim)
+            outs[idx - 1] = self.feat_out(z)
+
+            # update next inputs
+            ys = torch.cat(
+                (ys, outs[idx - 1].view(1, 1, self.output_dim)), dim=1
+            )  # (1, idx + 1, output_dim)
+
+        return outs.unsqueeze(0)
 
     def _add_first_frame_and_remove_last_frame(self, ys: torch.Tensor) -> torch.Tensor:
         ys_in = torch.cat(
