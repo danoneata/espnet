@@ -52,6 +52,8 @@ class Audio2Lip:
         model_file: Optional[Union[Path, str]] = None,
         dtype: str = "float32",
         device: str = "cpu",
+        fps_audio: int = 16_000,
+        fps_video: float = 29.97,
     ):
         assert check_argument_types()
 
@@ -64,6 +66,7 @@ class Audio2Lip:
         self.train_args = train_args
         self.model = model
         self.preprocess_fn = AudioToLipTask.build_preprocess_fn(train_args, False)
+        self.frames_ratio = fps_video / fps_audio
 
     @torch.no_grad()
     def __call__(self, speech):
@@ -75,7 +78,7 @@ class Audio2Lip:
         batch = {"speech": speech, "speech_lengths": lengths}
         batch = to_device(batch, self.device)
 
-        return self.model.inference(**batch)
+        return self.model.inference(frames_ratio=self.frames_ratio, **batch)
 
 
 def inference(
@@ -85,6 +88,8 @@ def inference(
     ngpu: int,
     seed: int,
     num_workers: int,
+    fps_audio: int,
+    fps_video: float,
     log_level: Union[int, str],
     data_path_and_name_and_type: Sequence[Tuple[str, str, str]],
     key_file: Optional[str],
@@ -116,6 +121,8 @@ def inference(
         model_file=model_file,
         dtype=dtype,
         device=device,
+        fps_audio=fps_audio,
+        fps_video=fps_video,
     )
 
     # 3. Build data-iterator
@@ -217,6 +224,16 @@ def get_parser():
     group.add_argument(
         "--key_file",
         type=str_or_none,
+    )
+    group.add_argument(
+        "--fps_audio",
+        type=int,
+        default=16_000,
+    )
+    group.add_argument(
+        "--fps_video",
+        type=float,
+        default=29.97,
     )
 
     group = parser.add_argument_group("The model configuration related")

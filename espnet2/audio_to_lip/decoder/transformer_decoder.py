@@ -71,10 +71,10 @@ class TransformerDecoder(AbsDecoder):
         before_outs = self.feat_out(zs).view(zs.size(0), -1, self.output_dim)
         return before_outs
 
-    def inference(self, hs, speech_lengths):
+    def inference(self, hs, speech_lengths, frames_ratio):
         assert hs.shape[0] == 1 and speech_lengths.shape[0] == 1
 
-        num_out = speech_lengths[0] / 16_000 * 29.97
+        num_out = speech_lengths[0] * frames_ratio
         num_out = int(num_out.round().cpu().item())
 
         # initialize

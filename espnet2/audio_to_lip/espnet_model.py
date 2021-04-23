@@ -66,10 +66,11 @@ class ESPnetAudioToLipModel(AbsESPnetModel):
         self,
         speech: torch.Tensor,
         speech_lengths: torch.Tensor,
+        frames_ratio: float,
     ):
         assert len(speech) == 1 # batch of one?
         encoder_out, _ = self.encode(speech, speech_lengths)
-        return self.decoder.inference(encoder_out, speech_lengths)
+        return self.decoder.inference(encoder_out, speech_lengths, frames_ratio)
 
     def collect_feats(
         self,
