@@ -14,21 +14,24 @@ python=python3       # Specify python to execute espnet commands
 asr_type=
 model_type=
 dset=
+fps=
 
 . utils/parse_options.sh
 
-case $dset in
-    "lrs3-test")
-        fps=25.00
-        ;;
-    "obama-tts")
-        fps=29.97
-        ;;
-    *)
-        echo "unknown dataset $dset"
-        exit 1
-        ;;
-esac
+if [ -z $fps ]; then
+    case $dset in
+        lrs3-test)
+            fps=25.00
+            ;;
+        obama-tts)
+            fps=29.97
+            ;;
+        *)
+            echo "unknown dataset $dset"
+            exit 1
+            ;;
+    esac
+fi
 
 logdir=exp/baseline
 
