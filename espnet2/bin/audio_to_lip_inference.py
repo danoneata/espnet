@@ -155,8 +155,9 @@ def inference(
             batch = {k: v[0] for k, v in batch.items() if not k.endswith("_lengths")}
 
             # start_time = time.perf_counter()
-            lips = audio2lip(**batch)
             key = keys[0]
+            logging.info(key)
+            lips = audio2lip(**batch)
             lips_writer[key] = lips.cpu().numpy()
 
 
