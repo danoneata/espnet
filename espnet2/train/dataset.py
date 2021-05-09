@@ -19,10 +19,12 @@ import humanfriendly
 import kaldiio
 import numpy as np
 import torch
+
 from torch.utils.data.dataset import Dataset
 from typeguard import check_argument_types
 from typeguard import check_return_type
 
+from espnet2.fileio.img_scp import ImgScpReader
 from espnet2.fileio.npy_scp import NpyScpReader
 from espnet2.fileio.rand_gen_dataset import FloatRandomGenerateDataset
 from espnet2.fileio.rand_gen_dataset import IntRandomGenerateDataset
@@ -160,6 +162,15 @@ DATA_TYPES = {
         "\n\n"
         "   utterance_id_A /some/where/a.npy\n"
         "   utterance_id_B /some/where/b.npy\n"
+        "   ...",
+    ),
+    "img": dict(
+        func=ImgScpReader,
+        kwargs=[],
+        help="Image file format."
+        "\n\n"
+        "   utterance_id_A /some/where/a.jpg\n"
+        "   utterance_id_B /some/where/b.jpg\n"
         "   ...",
     ),
     "text_int": dict(
@@ -406,7 +417,7 @@ class ESPnetDataset(AbsDataset):
                     value, (np.ndarray, torch.Tensor, str, numbers.Number)
                 ):
                     raise TypeError(
-                        f"Must be ndarray, torch.Tensor, str or Number: {type(value)}"
+                        f"Must be ndarray, torch.Tensor, str, Number or Image: {type(value)}"
                     )
             except Exception:
                 path, _type = self.debug_info[name]
@@ -441,6 +452,8 @@ class ESPnetDataset(AbsDataset):
                 value = value.astype(self.float_dtype)
             elif value.dtype.kind == "i":
                 value = value.astype(self.int_dtype)
+            elif value.dtype.kind == "u":
+                pass
             else:
                 raise NotImplementedError(f"Not supported dtype: {value.dtype}")
             data[name] = value

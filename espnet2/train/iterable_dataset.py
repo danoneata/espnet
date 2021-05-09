@@ -231,6 +231,8 @@ class IterableESPnetDataset(IterableDataset):
                     value = value.astype(self.float_dtype)
                 elif value.dtype.kind == "i":
                     value = value.astype(self.int_dtype)
+                elif value.dtype.kind == "u":
+                    pass
                 else:
                     raise NotImplementedError(f"Not supported dtype: {value.dtype}")
                 data[name] = value

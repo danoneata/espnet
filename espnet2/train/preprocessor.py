@@ -9,6 +9,9 @@ from typing import Union
 import numpy as np
 import scipy.signal
 import soundfile
+
+from PIL.Image import Image
+
 from typeguard import check_argument_types
 from typeguard import check_return_type
 
