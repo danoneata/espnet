@@ -109,7 +109,6 @@ def collate_multimodal_fn(
     float_pad_value: Union[float, int] = 0.0,
     int_pad_value: int = -32768,
     not_sequence: Collection[str] = (),
-    transform_visual=None,
 ) -> Tuple[List[str], Dict[str, torch.Tensor]]:
 
     assert check_argument_types()
