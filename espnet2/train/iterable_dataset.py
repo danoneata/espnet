@@ -12,6 +12,7 @@ from typing import Union
 import kaldiio
 import numpy as np
 import soundfile
+import skimage
 import torch
 from typeguard import check_argument_types
 
@@ -50,6 +51,7 @@ DATA_TYPES = {
     "sound": lambda x: soundfile.read(x)[0],
     "kaldi_ark": load_kaldi,
     "npy": np.load,
+    "img": skimage.io.imread,
     "text_int": lambda x: np.loadtxt(
         StringIO(x), ndmin=1, dtype=np.long, delimiter=" "
     ),

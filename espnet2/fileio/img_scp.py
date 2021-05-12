@@ -6,7 +6,6 @@ import numpy as np
 from typeguard import check_argument_types
 
 from skimage import io
-from PIL import Image
 
 from espnet2.fileio.read_text import read_2column_text
 
@@ -37,7 +36,6 @@ class ImgScpReader(collections.abc.Mapping):
     def __getitem__(self, key) -> np.ndarray:
         p = self.data[key]
         return io.imread(p)
-        # return Image.open(p)
 
     def __contains__(self, item):
         return item
