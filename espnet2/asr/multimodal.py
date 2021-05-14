@@ -140,9 +140,7 @@ class ESPnetASRMultimodalModel(AbsESPnetModel):
         text = text[:, : text_lengths.max()]
 
         # 1. Encoder
-        encoder_speech_out, encoder_out_lens = self.asr.encode(speech, speech_lengths)
-        encoder_visual_out = self.encoder_visual(visual)
-        encoder_out = self.feature_fuser(encoder_speech_out, encoder_visual_out)
+        encoder_speech_out, encoder_out_lens = self.encode(speech, speech_lengths, visual)
 
         # 2a. Attention-decoder branch
         if self.asr.ctc_weight == 1.0:
@@ -186,6 +184,17 @@ class ESPnetASRMultimodalModel(AbsESPnetModel):
         # force_gatherable: to-device and to-tensor if scalar for DataParallel
         loss, stats, weight = force_gatherable((loss, stats, batch_size), loss.device)
         return loss, stats, weight
+
+    def encode(
+        self,
+        speech: torch.Tensor,
+        speech_lengths: torch.Tensor,
+        visual: torch.Tensor,
+    ):
+        encoder_speech_out, encoder_out_lens = self.asr.encode(speech, speech_lengths)
+        encoder_visual_out = self.encoder_visual(visual)
+        encoder_out = self.feature_fuser(encoder_speech_out, encoder_visual_out)
+        return encoder_out, encoder_out_lens
 
     def collect_feats(
         self,
