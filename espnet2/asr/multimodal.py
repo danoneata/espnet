@@ -48,19 +48,29 @@ class AbsFeatureFuser(torch.nn.Module, ABC):
 
 
 class ConcatProjFuser(AbsFeatureFuser):
-    def __init__(self, dim_speech, dim_visual):
+    def __init__(self, dim_speech, dim_visual, use_residual=True):
         super().__init__()
         d_in = dim_speech + dim_visual
         d_out = dim_speech
         self.proj = torch.nn.Conv1d(d_in, d_out, kernel_size=1)
+        self.use_residual = use_residual
 
     def forward(self, speech, visual):
         _, T, _ = speech.shape
+
+        # concatenate
         visual = visual.unsqueeze(1).repeat(1, T, 1)
         out = torch.cat((speech, visual), dim=2)
+
+        # project
         out = out.permute(0, 2, 1)
         out = self.proj(out)
         out = out.permute(0, 2, 1)
+
+        # (optional) residual connection
+        if self.use_residual:
+            out = out + speech
+
         return out
 
 
@@ -95,6 +105,7 @@ class ProjConcatFuser(AbsFeatureFuser):
         # concatenate
         out = torch.cat((speech_out, visual_out), dim=2)
 
+        # (optional) residual connection
         if self.use_residual:
             out = out + speech
 
@@ -140,7 +151,7 @@ class ESPnetASRMultimodalModel(AbsESPnetModel):
         text = text[:, : text_lengths.max()]
 
         # 1. Encoder
-        encoder_speech_out, encoder_out_lens = self.encode(speech, speech_lengths, visual)
+        encoder_out, encoder_out_lens = self.encode(speech, speech_lengths, visual)
 
         # 2a. Attention-decoder branch
         if self.asr.ctc_weight == 1.0:
