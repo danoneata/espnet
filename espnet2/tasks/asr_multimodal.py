@@ -12,11 +12,12 @@ from typeguard import check_argument_types
 from torchvision import transforms as T
 
 from espnet2.asr.multimodal import (
+    ESPnetASRMultimodalModel,
     AbsEncoderVisual,
+    Resnet18,
     AbsFeatureFuser,
     ConcatProjFuser,
-    ESPnetASRMultimodalModel,
-    Resnet18,
+    ProjConcatFuser,
 )
 from espnet2.tasks.asr import ASRTask
 from espnet2.train.class_choices import ClassChoices
@@ -44,7 +45,7 @@ encoder_visual_choices = ClassChoices(
 
 feature_fuser_choices = ClassChoices(
     name="feature_fuser",
-    classes=dict(concat_proj=ConcatProjFuser),
+    classes=dict(concat_proj=ConcatProjFuser, proj_concat=ProjConcatFuser),
     type_check=AbsFeatureFuser,
     default="concat_proj",
 )

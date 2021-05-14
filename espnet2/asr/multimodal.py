@@ -64,6 +64,43 @@ class ConcatProjFuser(AbsFeatureFuser):
         return out
 
 
+class ProjConcatFuser(AbsFeatureFuser):
+    def __init__(self, dim_speech, dim_visual, p_speech=0.5, use_residual=True):
+        """The argument `p_speech` indicates the proportion of speech in the
+        output dimensionality.
+
+        """
+        super().__init__()
+        assert 0 < p_speech < 1
+        dim_speech_out = max(1, min(int(dim_speech * p_speech), dim_speech - 1))
+        dim_visual_out = dim_speech - dim_speech_out
+        self.proj_speech = torch.nn.Conv1d(dim_speech, dim_speech_out, kernel_size=1)
+        self.proj_visual = torch.nn.Conv1d(dim_visual, dim_visual_out, kernel_size=1)
+        self.use_residual = use_residual
+
+    def forward(self, speech, visual):
+        _, T, _ = speech.shape
+
+        # project speech
+        speech_out = speech.permute(0, 2, 1)
+        speech_out = self.proj_speech(speech_out)
+        speech_out = speech_out.permute(0, 2, 1)
+
+        # project visual
+        visual_out = visual.unsqueeze(2)
+        visual_out = self.proj_visual(visual_out)
+        visual_out = visual_out.permute(0, 2, 1)
+        visual_out = visual_out.repeat(1, T, 1)
+
+        # concatenate
+        out = torch.cat((speech_out, visual_out), dim=2)
+
+        if self.use_residual:
+            out = out + speech
+
+        return out
+
+
 # The multimodal model
 class ESPnetASRMultimodalModel(AbsESPnetModel):
     def __init__(
@@ -148,7 +185,6 @@ class ESPnetASRMultimodalModel(AbsESPnetModel):
 
         # force_gatherable: to-device and to-tensor if scalar for DataParallel
         loss, stats, weight = force_gatherable((loss, stats, batch_size), loss.device)
-        import pdb; pdb.set_trace()
         return loss, stats, weight
 
     def collect_feats(
