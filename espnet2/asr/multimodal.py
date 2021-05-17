@@ -38,6 +38,22 @@ class Resnet18(AbsEncoderVisual):
         return self._output_size
 
 
+class Resnet50(AbsEncoderVisual):
+    def __init__(self):
+        super().__init__()
+        model = models.resnet50(pretrained=True)
+        self.feature_extractor = torch.nn.Sequential(*(list(model.children())[:-1]))
+        self._output_size = 2048
+
+    def forward(self, image):
+        enc = self.feature_extractor(image)
+        enc = enc.squeeze(-1).squeeze(-1)
+        return enc
+
+    def output_size(self):
+        return self._output_size
+
+
 # Methods of fusing the speech and visual encodings.
 class AbsFeatureFuser(torch.nn.Module, ABC):
     @abstractmethod
