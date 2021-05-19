@@ -32,6 +32,8 @@ config="exp/baseline-subsample/config.yaml"
 train_dir="${data_feats}/${train_set}-${suffix}"
 valid_dir="${data_feats}/${valid_set}"
 
+warmup_steps=$((5000/${reciprocal}))
+
 case ${todo} in
     "prepare-folders")
         mkdir -p ${logdir}
@@ -64,6 +66,7 @@ case ${todo} in
             --ngpu 1 \
             --init_param ${model}:frontend:frontend ${model}:normalize:normalize ${model}:encoder:encoder \
             --config "${config}" \
+            --scheduler_conf "warmup_steps=${warmup_steps}" \
             --output_dir "${logdir}/asr"
         ;;
     "infer")
