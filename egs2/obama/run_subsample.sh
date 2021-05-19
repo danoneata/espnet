@@ -26,13 +26,15 @@ test_set=chunks-test
 
 suffix="reciprocal-$(printf "%02d" ${reciprocal})-num-${repeat_num}"
 
-logdir="exp/baseline-subsample/${suffix}"
-config="exp/baseline-subsample/config.yaml"
+logdir="exp/baseline-subsample-v2/${suffix}"
+config="exp/baseline-subsample-v2/config.yaml"
 
 train_dir="${data_feats}/${train_set}-${suffix}"
 valid_dir="${data_feats}/${valid_set}"
 
-warmup_steps=$((5000/${reciprocal}))
+max_epoch=$(echo ${reciprocal} | awk '{printf "%.0f\n", 100 * log($1) / log(2)}')
+# warmup_steps=$((5000/${reciprocal}))
+# --scheduler_conf "warmup_steps=${warmup_steps}" \
 
 case ${todo} in
     "prepare-folders")
@@ -66,7 +68,7 @@ case ${todo} in
             --ngpu 1 \
             --init_param ${model}:frontend:frontend ${model}:normalize:normalize ${model}:encoder:encoder \
             --config "${config}" \
-            --scheduler_conf "warmup_steps=${warmup_steps}" \
+            --max_epcoch "${max_epoch}" \
             --output_dir "${logdir}/asr"
         ;;
     "infer")
