@@ -27,6 +27,7 @@ test_set=chunks-test
 suffix="reciprocal-$(printf "%02d" ${reciprocal})-num-${repeat_num}"
 
 logdir="exp/baseline-subsample/${suffix}"
+config="exp/baseline-subsample/config.yaml"
 
 train_dir="${data_feats}/${train_set}-${suffix}"
 valid_dir="${data_feats}/${valid_set}"
@@ -47,7 +48,7 @@ case ${todo} in
         ;;
     "train")
         stats_dir="${logdir}/stats"
-        model="/home/doneata/src/espnet2/tools/venv/lib/python3.8/site-packages/espnet_model_zoo/653d10049fdc264f694f57b49849343e/exp/asr_train_asr_transformer_e18_raw_bpe_sp/54epoch.pth"
+        model="models/653d10049fdc264f694f57b49849343e/exp/asr_train_asr_transformer_e18_raw_bpe_sp/54epoch.pth"
         # config.yaml is based on the pretrained's model config
         ${python} -m espnet2.bin.audio_to_lip_train \
             --train_data_path_and_name_and_type "${train_dir}/wav.scp,speech,sound" \
@@ -62,7 +63,7 @@ case ${todo} in
             --batch_bins 1000000 \
             --ngpu 1 \
             --init_param ${model}:frontend:frontend ${model}:normalize:normalize ${model}:encoder:encoder \
-            --config "${logdir}/config.yaml" \
+            --config "${config}" \
             --output_dir "${logdir}/asr"
         ;;
     "infer")
@@ -83,7 +84,7 @@ case ${todo} in
             --ngpu 1 \
             --data_path_and_name_and_type "${test_dir}/wav.scp,speech,sound" \
             --model_file "${logdir}/asr/valid.loss.${pred_model_type}.pth" \
-            --train_config "${logdir}/config.yaml" \
+            --train_config "${logdir}/asr/config.yaml" \
             --output_dir "${logdir}/asr/output-${pred_split}-${pred_model_type}"
         ;;
     *)
