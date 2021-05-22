@@ -19,6 +19,7 @@ from espnet2.asr.multimodal import (
     AbsFeatureFuser,
     ConcatProjFuser,
     ProjConcatFuser,
+    ProjConcatProjFuser,
 )
 from espnet2.tasks.asr import ASRTask
 from espnet2.train.class_choices import ClassChoices
@@ -46,7 +47,7 @@ encoder_visual_choices = ClassChoices(
 
 feature_fuser_choices = ClassChoices(
     name="feature_fuser",
-    classes=dict(concat_proj=ConcatProjFuser, proj_concat=ProjConcatFuser),
+    classes=dict(concat_proj=ConcatProjFuser, proj_concat=ProjConcatFuser, proj_concat_proj=ProjConcatProjFuser),
     type_check=AbsFeatureFuser,
     default="concat_proj",
 )

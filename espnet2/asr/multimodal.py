@@ -128,6 +128,45 @@ class ProjConcatFuser(AbsFeatureFuser):
         return out
 
 
+class ProjConcatProjFuser(AbsFeatureFuser):
+    def __init__(self, dim_speech, dim_visual, dim_speech_inter=128, dim_visual_inter=128, use_layer_norm=True):
+        super().__init__()
+        if use_layer_norm:
+            self.norm_speech = torch.nn.LayerNorm(dim_speech)
+            self.norm_visual = torch.nn.LayerNorm(dim_visual)
+        else:
+            self.norm_speech = torch.nn.Identity()
+            self.norm_visual = torch.nn.Identity()
+        self.proj_speech = torch.nn.Conv1d(dim_speech, dim_speech_inter, kernel_size=1)
+        self.proj_visual = torch.nn.Conv1d(dim_visual, dim_visual_inter, kernel_size=1)
+        self.proj_back = torch.nn.Conv1d(dim_speech_inter + dim_visual_inter, dim_speech, kernel_size=1)
+        self.activation = torch.nn.GELU()
+
+    def forward(self, speech, visual):
+        _, T, _ = speech.shape
+
+        # project speech
+        speech_out = self.norm_speech(speech)
+        speech_out = speech_out.permute(0, 2, 1)
+        speech_out = self.proj_speech(speech_out)
+
+        # project visual
+        visual_out = self.norm_visual(visual)
+        visual_out = visual_out.unsqueeze(2)
+        visual_out = self.proj_visual(visual_out)
+        visual_out = visual_out.repeat(1, 1, T)
+
+        # concatenate
+        out = torch.cat((speech_out, visual_out), dim=1)
+        out = self.activation(out)
+        out = self.proj_back(out)
+        out = out.permute(0, 2, 1)
+
+        out = out + speech
+
+        return out
+
+
 # The multimodal model
 class ESPnetASRMultimodalModel(AbsESPnetModel):
     def __init__(
