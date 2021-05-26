@@ -31,6 +31,7 @@ config="exp/baseline-subsample-v2/config.yaml"
 
 train_dir="${data_feats}/${train_set}-${suffix}"
 valid_dir="${data_feats}/${valid_set}"
+stats_dir="exp/baseline-subsample/${suffix}/stats"
 
 max_epoch=$(echo ${reciprocal} | awk '{printf "%.0f\n", 100 * log($1) / log(2)}')
 # warmup_steps=$((5000/${reciprocal}))
@@ -51,7 +52,6 @@ case ${todo} in
             --output_dir "${logdir}/stats"
         ;;
     "train")
-        stats_dir="${logdir}/stats"
         model="models/653d10049fdc264f694f57b49849343e/exp/asr_train_asr_transformer_e18_raw_bpe_sp/54epoch.pth"
         # config.yaml is based on the pretrained's model config
         ${python} -m espnet2.bin.audio_to_lip_train \
@@ -68,7 +68,7 @@ case ${todo} in
             --ngpu 1 \
             --init_param ${model}:frontend:frontend ${model}:normalize:normalize ${model}:encoder:encoder \
             --config "${config}" \
-            --max_epcoch "${max_epoch}" \
+            --max_epoch "${max_epoch}" \
             --output_dir "${logdir}/asr"
         ;;
     "infer")
