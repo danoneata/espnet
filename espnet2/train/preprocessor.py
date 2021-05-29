@@ -217,6 +217,9 @@ class CommonPreprocessor(AbsPreprocessor):
         assert check_argument_types()
 
         if self.speech_name in data:
+            # convert to mono
+            if data[self.speech_name].ndim == 2:
+                data[self.speech_name] = data[self.speech_name].mean(axis=1)
             if self.train and self.rirs is not None and self.noises is not None:
                 speech = data[self.speech_name]
                 nsamples = len(speech)
