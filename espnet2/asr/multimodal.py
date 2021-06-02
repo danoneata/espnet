@@ -108,6 +108,10 @@ class ResnetGMLP(AbsEncoderVisual):
 
 # Methods of fusing the speech and visual encodings.
 class AbsFeatureFuser(torch.nn.Module, ABC):
+    def __init__(self):
+        super().__init__()
+        self.is_temporal_concat = False
+
     @abstractmethod
     def forward(
         self, enc_speech: torch.Tensor, enc_visual: torch.Tensor
@@ -312,6 +316,8 @@ class ESPnetASRMultimodalModel(AbsESPnetModel):
         encoder_speech_out, encoder_out_lens = self.asr.encode(speech, speech_lengths)
         encoder_visual_out = self.encoder_visual(visual)
         encoder_out = self.feature_fuser(encoder_speech_out, encoder_visual_out)
+        if self.feature_fuser.is_temporal_concat:
+            encoder_out_lens += self.encoder_visual.seq_len
         return encoder_out, encoder_out_lens
 
     def collect_feats(

@@ -19,6 +19,7 @@ from espnet2.asr.multimodal import (
     ResnetGMLP,
     AbsFeatureFuser,
     ConcatProjFuser,
+    ConcatTemp,
     ProjConcatFuser,
     ProjConcatProjFuser,
 )
@@ -48,7 +49,13 @@ encoder_visual_choices = ClassChoices(
 
 feature_fuser_choices = ClassChoices(
     name="feature_fuser",
-    classes=dict(concat_proj=ConcatProjFuser, proj_concat=ProjConcatFuser, proj_concat_proj=ProjConcatProjFuser),
+    classes=dict(
+        select_speech=SelectSpeech,
+        concat_proj=ConcatProjFuser,
+        concat_temp=ConcatTemp,
+        proj_concat=ProjConcatFuser,
+        proj_concat_proj=ProjConcatProjFuser,
+    ),
     type_check=AbsFeatureFuser,
     default="concat_proj",
 )
