@@ -193,7 +193,14 @@ class ProjConcatFuser(AbsFeatureFuser):
 
 
 class ProjConcatProjFuser(AbsFeatureFuser):
-    def __init__(self, dim_speech, dim_visual, dim_speech_inter=128, dim_visual_inter=128, use_layer_norm=True):
+    def __init__(
+        self,
+        dim_speech,
+        dim_visual,
+        dim_speech_inter=128,
+        dim_visual_inter=128,
+        use_layer_norm=True,
+    ):
         super().__init__()
         if use_layer_norm:
             self.norm_speech = torch.nn.LayerNorm(dim_speech)
@@ -203,7 +210,9 @@ class ProjConcatProjFuser(AbsFeatureFuser):
             self.norm_visual = torch.nn.Identity()
         self.proj_speech = torch.nn.Conv1d(dim_speech, dim_speech_inter, kernel_size=1)
         self.proj_visual = torch.nn.Conv1d(dim_visual, dim_visual_inter, kernel_size=1)
-        self.proj_back = torch.nn.Conv1d(dim_speech_inter + dim_visual_inter, dim_speech, kernel_size=1)
+        self.proj_back = torch.nn.Conv1d(
+            dim_speech_inter + dim_visual_inter, dim_speech, kernel_size=1
+        )
         self.activation = torch.nn.GELU()
 
     def forward(self, speech, visual):
@@ -231,10 +240,30 @@ class ProjConcatProjFuser(AbsFeatureFuser):
         return out
 
 
+class ConcatTemp(AbsFeatureFuser):
+    def __init__(self, dim_speech, dim_visual):
+        super().__init__()
+        self.is_temporal_concat = True
+        self.norm_visual = torch.nn.LayerNorm(dim_visual)
+        self.proj_visual = torch.nn.Conv1d(dim_visual, dim_speech, kernel_size=1)
+        assert dim_speech == dim_visual
+
+    def forward(self, speech, visual):
+        visual_out = self.norm_visual(visual)
+        visual_out = visual_out.permute(0, 2, 1)
+        visual_out = self.proj_visual(visual_out)
+        visual_out = visual_out.permute(0, 2, 1)
+        out = torch.cat((visual, speech), dim=1)
+        return out
+
+
 # The multimodal model
 class ESPnetASRMultimodalModel(AbsESPnetModel):
     def __init__(
-        self, asr: ESPnetASRModel, encoder_visual, feature_fuser,
+        self,
+        asr: ESPnetASRModel,
+        encoder_visual,
+        feature_fuser,
     ):
         super().__init__()
         self.asr = asr
