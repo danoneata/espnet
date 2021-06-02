@@ -18,6 +18,7 @@ from espnet2.asr.multimodal import (
     Resnet50,
     ResnetGMLP,
     AbsFeatureFuser,
+    SelectSpeech,
     ConcatProjFuser,
     ConcatTemp,
     ProjConcatFuser,

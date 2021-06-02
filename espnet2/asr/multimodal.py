@@ -119,6 +119,14 @@ class AbsFeatureFuser(torch.nn.Module, ABC):
         raise NotImplementedError
 
 
+class SelectSpeech(AbsFeatureFuser):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+
+    def forward(self, speech, visual):
+        return speech
+
+
 class ConcatProjFuser(AbsFeatureFuser):
     def __init__(self, dim_speech, dim_visual, use_residual=True):
         super().__init__()
