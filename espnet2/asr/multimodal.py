@@ -253,7 +253,7 @@ class ConcatTemp(AbsFeatureFuser):
         visual_out = visual_out.permute(0, 2, 1)
         visual_out = self.proj_visual(visual_out)
         visual_out = visual_out.permute(0, 2, 1)
-        out = torch.cat((visual, speech), dim=1)
+        out = torch.cat((visual_out, speech), dim=1)
         return out
 
 
