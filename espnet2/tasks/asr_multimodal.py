@@ -16,6 +16,7 @@ from espnet2.asr.multimodal import (
     AbsEncoderVisual,
     Resnet18,
     Resnet50,
+    ResnetGMLP,
     AbsFeatureFuser,
     ConcatProjFuser,
     ProjConcatFuser,
@@ -40,7 +41,7 @@ resize_and_normalize = T.Compose(
 
 encoder_visual_choices = ClassChoices(
     name="encoder_visual",
-    classes=dict(resnet18=Resnet18, resnet50=Resnet50),
+    classes=dict(resnet18=Resnet18, resnet50=Resnet50, resnet_gmlp=ResnetGMLP),
     type_check=AbsEncoderVisual,
     default="resnet18",
 )

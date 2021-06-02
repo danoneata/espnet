@@ -10,6 +10,8 @@ from espnet2.asr.espnet_model import ESPnetASRModel
 from espnet2.torch_utils.device_funcs import force_gatherable
 from espnet2.train.abs_espnet_model import AbsESPnetModel
 
+from g_mlp_pytorch import Residual, PreNorm, gMLPBlock
+
 
 # Encoders for the visual channel.
 class AbsEncoderVisual(torch.nn.Module, ABC):
@@ -48,6 +50,56 @@ class Resnet50(AbsEncoderVisual):
     def forward(self, image):
         enc = self.feature_extractor(image)
         enc = enc.squeeze(-1).squeeze(-1)
+        return enc
+
+    def output_size(self):
+        return self._output_size
+
+
+class ResnetGMLP(AbsEncoderVisual):
+    def __init__(self, num_gmlp_layers=1, num_resnet_layers=18, use_pos_emb=False):
+        super().__init__()
+        if num_resnet_layers == 18:
+            resnet_model = models.resnet18(pretrained=True)
+            self._output_size = 512
+        elif resnet_type == 50:
+            resnet_model = models.resnet50(pretrained=True)
+            self._output_size = 2048
+
+        dim = self._output_size
+        dim_ff = dim // 2
+        self.seq_len = 7 * 7
+
+        self.feature_extractor = torch.nn.Sequential(
+            *(list(resnet_model.children())[:-2])
+        )
+
+        if num_gmlp_layers > 0:
+            self.gmlp = torch.nn.Sequential(
+                *[
+                    Residual(
+                        PreNorm(
+                            dim,
+                            gMLPBlock(
+                                dim=dim,
+                                dim_ff=dim_ff,
+                                seq_len=self.seq_len,
+                            ),
+                        )
+                    )
+                    for i in range(num_gmlp_layers)
+                ]
+            )
+        else:
+            self.gmlp = None
+
+    def forward(self, image):
+        enc = self.feature_extractor(image)
+        enc = enc.view(enc.shape[0], enc.shape[1], -1)
+        enc = enc.permute(0, 2, 1)
+        if self.gmlp is not None:
+            enc = self.gmlp(enc)
+        # enc = enc.permute(0, 2, 1)
         return enc
 
     def output_size(self):
