@@ -26,6 +26,9 @@ if [ -z $fps ]; then
         obama-tts)
             fps=29.97
             ;;
+        iohannis)
+            fps=25.00
+            ;;
         *)
             echo "unknown dataset $dset"
             exit 1
