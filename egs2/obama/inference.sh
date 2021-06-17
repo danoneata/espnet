@@ -29,6 +29,9 @@ if [ -z $fps ]; then
         iohannis)
             fps=25.00
             ;;
+        diego)
+            fps=29.97
+            ;;
         *)
             echo "unknown dataset $dset"
             exit 1
