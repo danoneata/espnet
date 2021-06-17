@@ -26,7 +26,7 @@ if [ -z $fps ]; then
         obama-tts)
             fps=29.97
             ;;
-        iohannis)
+        iohannis-*)
             fps=25.00
             ;;
         diego)
@@ -39,7 +39,7 @@ if [ -z $fps ]; then
     esac
 fi
 
-logdir=exp/baseline
+logdir="exp/baseline"
 
 asr_dir="${logdir}/${asr_type}"
 test_dir="data/${dset}"
@@ -48,6 +48,6 @@ ${python} -m espnet2.bin.audio_to_lip_inference \
     --ngpu 1 \
     --data_path_and_name_and_type "${test_dir}/wav.scp,speech,sound" \
     --model_file "${asr_dir}/valid.loss.${model_type}.pth" \
-    --train_config "${logdir}/config.yaml" \
+    --train_config "${asr_dir}/config.yaml" \
     --output_dir "${asr_dir}/output-${dset}-${model_type}" \
     --fps_video ${fps}
