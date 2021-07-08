@@ -29,7 +29,7 @@ if [ -z $fps ]; then
         iohannis-*)
             fps=25.00
             ;;
-        diego)
+        diego-*)
             fps=29.97
             ;;
         *)
